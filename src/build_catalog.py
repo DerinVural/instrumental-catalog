@@ -13,6 +13,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import response as resp
 import spectra as spec
 from photometry import Photometry
+import radiometry as radio
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(HERE, "data")
@@ -264,6 +265,16 @@ def main():
                 "> basligindan, f/1.685) -> aciklik alani 5.661 cm^2. Ucus degerleri\n"
                 "> istenirse S0'i **0.947** ile carpin (=%.6g e-/s).\n"
                 "> Karar: sim ile tutarlilik esas alindi.\n\n" % (s0 * 0.947))
+        radio.write_report_section(f, s0, MAG_LIMIT)
+
+        f.write("## On-eleme ve renk payi [B1]\n\n")
+        f.write("| | |\n|---|---|\n")
+        f.write("| m_inst limiti | %.1f |\n" % MAG_LIMIT)
+        f.write("| COLOR_MARGIN | %.2f |\n" % COLOR_MARGIN)
+        f.write("| V on-eleme esigi | %.2f (= limit + pay) |\n" % VMAG_PREFILTER)
+        f.write("| olculen delta_v min / max | %.3f / %.3f |\n" % (dv.min(), dv.max()))
+        f.write("| **kalan pay** | **%.3f kadir** |\n\n" % (COLOR_MARGIN - abs(dv.min())))
+
         f.write("## Yildiz sayilari\n\n")
         f.write("- m_inst <= %.1f: **%d yildiz**\n" % (MAG_LIMIT, len(rows)))
         f.write("- V gecersiz (atlandi): %d\n" % stats["skipped_v"])

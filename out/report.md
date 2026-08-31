@@ -17,6 +17,45 @@
 > istenirse S0'i **0.947** ile carpin (=6.46782e+06 e-/s).
 > Karar: sim ile tutarlilik esas alindi.
 
+## Radyometri butcesi (S0 -> tespit)
+
+Zincir: `m_inst -> e-/s -> poz -> e- -> SNR -> centroid -> attitude`. Poz 50 ms, okuma gurultusu 13 e-, pencere 9 px, sigma_PSF 0.70 px, plaka olcegi 25.84 as/px.
+
+| m_inst | e-/s | e- (50 ms) | SNR | centroid px | tek yildiz (as) |
+|---|---|---|---|---|---|
+| 2.0 | 1.08e+06 | 54122 | 229.4 | 0.0031 | 0.079 |
+| 4.0 | 1.72e+05 | 8578 | 85.3 | 0.0082 | 0.212 |
+| 6.0 | 2.72e+04 | 1359 | 25.3 | 0.0277 | 0.715 |
+| 7.0 | 1.08e+04 | 541 | 11.9 | 0.0588 | 1.519 |
+| 8.0 | 4.31e+03 | 215 | 5.2 | 0.1355 | 3.502 |
+
+### Tespit limiti
+
+| poz | SNR>6 | SNR>10 | SNR>15 |
+|---|---|---|---|
+| 15 ms | 6.52 | 5.91 | 5.40 |
+| 50 ms | 7.83 | 7.22 | 6.71 |
+
+### Doyma
+
+- Tam kuyu 13500 e-, tepe piksel payi 27% -> **m_inst < 2.09 olan yildizlar DOYAR** (50 ms pozda).
+- Doymus yildizin merkezi kayar; algoritma tarafina 'bu listeye merkez guvenme' notu gerekir.
+
+### Attitude (kaba kestirim)
+
+- m_inst=6 yildizlar, 15 yildizli cozum: **0.184 arcsec** (tek yildiz 0.715 / sqrt(15)).
+- NOT: yalnizca foton/okuma gurultusu. Smear, alan-bagimli PSF, kalibrasyon ve katalog hatalari DAHIL DEGIL.
+
+## On-eleme ve renk payi [B1]
+
+| | |
+|---|---|
+| m_inst limiti | 7.0 |
+| COLOR_MARGIN | 4.50 |
+| V on-eleme esigi | 11.50 (= limit + pay) |
+| olculen delta_v min / max | -3.787 / 0.026 |
+| **kalan pay** | **0.713 kadir** |
+
 ## Yildiz sayilari
 
 - m_inst <= 7.0: **18993 yildiz**
