@@ -1,3 +1,22 @@
+# ZEMAX optik gecirgenlik — StarTracker_F1.68_v2_Final_TUZAY.zmx, Field Pos 0.0 (on-axis)
+#
+# [B2] DOGRULANDI: bu degerler MUTLAK gecirgenliktir (aciklik alani DAHIL DEGIL).
+#   Kanit: "Chief Ray Transmission Surface By Surface" bolumunde 17 yuzeyin
+#   carpimi 0.286035 @480nm; raporlanan Transmission @0.4800 = 0.286566.
+#   Ayni buyukluk (fark %0.2, isin-izgara ortalamasi). -> aperture_area_cm2()
+#   ile CIFT SAYIM YOKTUR.
+#
+# [B2] UYARI — KAPLAMA TUTARSIZLIGI:
+#   Yuzey basina gecirgenlikler 0.9385-0.9566 (saf Fresnel, ~4-6% kayip)
+#   = KAPLAMASIZ cam-hava yuzeyi. Hicbir yuzey AR seviyesinde (0.99+) degil.
+#   Ama TU-XYZ/star-tracker-catalog (A-22, tasarimci teyidi) "tum yuzeyler AR
+#   kaplamali, tau/yuzey 0.995" diyor.
+#   OLCULEN ETKI (AR senaryosu, Fresnel yuzeyleri 0.995'e cikarilirsa):
+#     S0 / tespit limiti : 1.50x = 0.44 kadir  (ONEMLI)
+#     m_inst renk terimi : maks 0.018 kadir    (ihmal edilebilir)
+#   -> KATALOG KADIRLERI GUVENDE; mutlak olcek tasarimciyla netlestirilmeli.
+#      Kaplamali bir ZEMAX kosusu alinirsa bu dosya yenilenmelidir.
+#
 lambda_nm,T_optics
 400.0,0.090763753
 480.0,0.286565708

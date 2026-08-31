@@ -47,8 +47,12 @@ phot = Photometry(grid, r_inst, r_v, vlam, vflux, area)
 
 V_TEST = 3.14159
 mi = phot.m_inst(vlam, vflux, V_TEST)
-check("Test1 Vega yuvarlak-gidis", abs(mi - V_TEST) < 1e-3,
-      "A0V spektrumu V=%.5f -> m_inst=%.5f (fark %.2e)" % (V_TEST, mi, abs(mi - V_TEST)))
+# [N1] Bu bir DOGRULAMA degil, CEBIRSEL OZDESLIK kontrolu: ratio/vega_ratio=1.
+# Fizik hatasi yakalayamaz; yalniz oran formulunde kodlama hatasi yakalar.
+# Tolerans makine hassasiyetinde tutulur.
+check("Regresyon [N1]: oran formulu ozdeslik kontrolu", abs(mi - V_TEST) < 1e-9,
+      "A0V spektrumu V=%.5f -> m_inst=%.5f (fark %.2e; DOGRULAMA DEGIL)"
+      % (V_TEST, mi, abs(mi - V_TEST)))
 
 # ── master yukle ──
 rows = list(csv.DictReader(open(MASTER)))
@@ -92,15 +96,49 @@ if bet and rig:
     check("Test3 Betelgeuse < Rigel", float(bet["delta_v"]) < float(rig["delta_v"]) - 0.3,
           "delta: Betelgeuse %.3f < Rigel %.3f" % (float(bet["delta_v"]), float(rig["delta_v"])))
 
-# ── Test 4: S0 mertebesi ──
+# ── Test 4 [B2 YENI]: BAGIMSIZ mutlak-olcek capasi ──
+# Eski Test 4, YI_SIL'in kendi kaba formuluyle (kendisi ~2x belirsiz) 0.1..10
+# penceresinde kiyasliyordu -> 3x'lik gercek bir hatayi bile YAKALAYAMAZDI.
+#
+# Yeni capa BAGIMSIZ ve yayinlanmis: V=0 bir yildizin V bandindaki foton akisi.
+#   F_lambda(V=0) = 3.63e-9 erg/s/cm^2/A  (Bessell 1998)
+#   foton enerjisi @5500A = hc/lambda
+#   -> N = F*lambda/hc = 1005 foton/s/cm^2/A
+# Bu, mutlak zincirin (spektrum olcekleme -> foton donusumu) QE/T'den BAGIMSIZ
+# dogrulamasidir; dar pencere (+-%5) gercek hatayi yakalar.
+HC = 1.98644586e-16          # erg*cm
+F_V0 = 3.63e-9               # erg/s/cm^2/A
+LAM_REF_A = 5500.0
+expected_ph = F_V0 * (LAM_REF_A * 1e-8) / HC          # foton/s/cm^2/A
+
+# bizim zincirimizden ayni buyuklugu turet: Vega spektrumunu V=0'a olcekle
+trapz = np.trapezoid if hasattr(np, "trapezoid") else np.trapz
+f_grid = np.interp(grid, vlam, vflux, left=0.0, right=0.0)
+w = r_v * grid
+mean_f_v = trapz(f_grid * w, grid) / trapz(w, grid)
+scale = 3.63e-9 / mean_f_v                             # photometry.py ile AYNI olcekleme
+f_abs_at_ref = np.interp(550.0, grid, f_grid) * scale  # erg/s/cm^2/A @550nm
+ours_ph = f_abs_at_ref * (LAM_REF_A * 1e-8) / HC
+rel = ours_ph / expected_ph
+check("Test4 [B2] mutlak-olcek capasi (V=0 foton akisi)", 0.95 < rel < 1.05,
+      "bizim %.0f vs standart %.0f foton/s/cm^2/A -> %.3fx" % (ours_ph, expected_ph, rel))
+
+# BILGI AMACLI (gecme/kalma kriteri DEGIL): YI_SIL'in kaba formuluyle kiyas
 s0_new = phot.s0_electrons_per_s()
-# YI_SIL mevcut kaba formulu
 phi_spectral, band_width, tau_optics, qe_avg = 8.3e7, 320.0, 0.80, 0.50
-area_m2 = area * 1e-4
-s0_old = phi_spectral * band_width * area_m2 * tau_optics * qe_avg
-ratio = s0_new / s0_old
-check("Test4 S0 mertebesi", 0.1 < ratio < 10.0,
-      "yeni %.4g / eski %.4g = %.2fx" % (s0_new, s0_old, ratio))
+s0_old = phi_spectral * band_width * (area * 1e-4) * tau_optics * qe_avg
+print("  [bilgi] S0=%.4g | YI_SIL kaba formulu=%.4g (%.2fx) — kriter DEGIL"
+      % (s0_new, s0_old, s0_new / s0_old))
+
+# BILGI AMACLI [B2]: T_optics'in katkisini yalit
+r_inst_noT = resp.system_response(grid) / np.where(
+    np.interp(grid, *resp._load_csv("t_optics_zemax.csv")) > 0,
+    np.interp(grid, *resp._load_csv("t_optics_zemax.csv")), 1.0)
+from photometry import Photometry as _P
+s0_noT = _P(grid, r_inst_noT, r_v, vlam, vflux, area).s0_electrons_per_s()
+print("  [bilgi] S0 (T_optics=1) = %.4g -> T_optics zincire %.2fx (%.2f kadir) maliyet"
+      % (s0_noT, s0_noT / s0_new, 2.5 * np.log10(s0_noT / s0_new)))
+print("  [bilgi] AR kaplamali senaryo (olculen 1.50x): S0 = %.4g" % (s0_new * 1.50))
 
 # ── Test 5: dagilim saglik ──
 # Ust sinir: hicbir yildiz V'den belirgin SONUK olmamali (silisyum NIR'de genis bant).

@@ -16,11 +16,29 @@ GRID_NM = np.arange(LAM_MIN, LAM_MAX + LAM_STEP, LAM_STEP)
 
 
 def _load_csv(name):
-    """iki kolonlu CSV (lambda_nm, deger) -> (lam, val) dizileri"""
+    """iki kolonlu CSV (lambda_nm, deger) -> (lam, val).
+
+    '#' ile baslayan yorum satirlari ve basliksatiri atlanir (veri dosyalarinda
+    proveniyans/uyari notlari bulunabilir — bkz. t_optics_zemax.csv).
+    """
     path = os.path.join(DATA, name)
-    arr = np.genfromtxt(path, delimiter=",", names=True)
-    cols = arr.dtype.names
-    return np.asarray(arr[cols[0]], float), np.asarray(arr[cols[1]], float)
+    lam, val = [], []
+    with open(path) as f:
+        for line in f:
+            s = line.strip()
+            if not s or s.startswith("#"):
+                continue
+            parts = s.split(",")
+            if len(parts) < 2:
+                continue
+            try:
+                lam.append(float(parts[0]))
+                val.append(float(parts[1]))
+            except ValueError:
+                continue                      # baslik satiri
+    if not lam:
+        raise ValueError("%s: sayisal veri bulunamadi" % name)
+    return np.asarray(lam, float), np.asarray(val, float)
 
 
 def _interp_clamped(lam_src, val_src, grid):
