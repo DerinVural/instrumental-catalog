@@ -75,10 +75,10 @@ def parse_sptype(sp):
     s = str(sp).strip()
     if not s or s.lower() in ("--", "nan", "none"):
         return None
-    m = re.match(r"^\s*[a-z]{0,2}\s*([OBAFGKM])\s*([\d.]*)(.*)$", s)
+    m = re.match(r"^\s*([a-z]{0,2})\s*([OBAFGKM])\s*([\d.]*)(.*)$", s)
     if not m:
         return None
-    letter, digits, rest = m.group(1), m.group(2), m.group(3)
+    prefix, letter, digits, rest = m.group(1), m.group(2), m.group(3), m.group(4)
     idx = _CLASS_BASE[letter] + _parse_subnum(digits)
 
     lum = None
@@ -86,6 +86,9 @@ def parse_sptype(sp):
     if lm:
         tok = lm.group(1)
         lum = "I" if tok in ("Ia", "Ib", "Iab", "I") else tok
+    if lum is None and prefix:
+        # ESKI TARZ onekler (Johnson/Mitchell, HD): g=dev, d=cuce, sd=altcuce, c=superdev
+        lum = {"g": "III", "d": "V", "sd": "V", "c": "I"}.get(prefix)
     if lum is None:
         lum = "V"          # isitma sinifi belirtilmemis -> anakol varsay
     return idx, lum
@@ -151,15 +154,48 @@ class PicklesLibrary:
         return out
 
 
-def resolve_spectrum(lib, sptype, bv):
-    """Fallback zinciri: SpType -> B-V -> G2V.
+def lum_class_from_absmag(vmag, plx_mas, e_plx_mas=None):
+    """Mutlak kadirden isitma sinifi (SpType'ta sinif YOKKEN kullanilir).
+
+    M_V = V + 5 + 5 log10(plx_arcsec).  Paralaks guvenilir degilse None.
+    Esikler kaba ama ayirici: dev/cuce farki bu bantta ~1 kadire kadar dM degistirir.
+    """
+    if plx_mas is None or not np.isfinite(plx_mas) or plx_mas <= 1.0:
+        return None                      # >1 kpc veya negatif -> guvenilmez
+    if e_plx_mas is not None and np.isfinite(e_plx_mas) and e_plx_mas > 0:
+        if plx_mas / e_plx_mas < 5.0:    # <5 sigma -> guvenme
+            return None
+    if vmag is None or not np.isfinite(vmag):
+        return None
+    m_v = vmag + 5.0 + 5.0 * np.log10(plx_mas / 1000.0)
+    if m_v < 0.0:
+        return "I"
+    if m_v < 3.5:
+        return "III"
+    if m_v < 4.5:
+        return "IV"
+    return "V"
+
+
+def resolve_spectrum(lib, sptype, bv, vmag=None, plx_mas=None, e_plx_mas=None):
+    """Fallback zinciri: SpType(+paralaks) -> B-V -> G2V.
 
     Donus: (filename, matched_sptype, flag)
-      flag: 'sptype' | 'sptype_lum_approx' | 'bv' | 'default_g2v'
+      flag: 'sptype' | 'sptype_lum_plx' | 'sptype_lum_approx' | 'bv' | 'default_g2v'
     """
     p = parse_sptype(sptype)
     if p is not None:
-        fn, sp, exact = lib.match(p[0], p[1])
+        idx, lum = p
+        # SpType'ta isitma sinifi YOKSA parse_sptype 'V' varsayar. Parlak katalogda
+        # bu gec-M yildizlarda YANLIS (M6-M8 cuceler cok sonuk; bunlar dev).
+        # Paralaks varsa mutlak kadirden gercek sinifi tureti.
+        explicit = re.search(r"(IV|III|II|Iab|Ia|Ib|I|V)", str(sptype or ""))
+        if not explicit:
+            lum_plx = lum_class_from_absmag(vmag, plx_mas, e_plx_mas)
+            if lum_plx is not None and lum_plx != lum:
+                fn, sp, exact = lib.match(idx, lum_plx)
+                return fn, sp, "sptype_lum_plx"
+        fn, sp, exact = lib.match(idx, lum)
         return fn, sp, ("sptype" if exact else "sptype_lum_approx")
 
     idx = bv_to_index(bv)

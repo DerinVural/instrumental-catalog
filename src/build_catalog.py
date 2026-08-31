@@ -27,14 +27,29 @@ TARGET_EPOCH = 2000.0           # cikti epogu (J2000, mevcut hygdata konvansiyon
 
 
 def load_sptype_map():
+    """hip -> dict(sptype, plx, e_plx, varflag, multflag)"""
     path = os.path.join(DATA, "hip_sptype.csv")
     m = {}
+
+    def fnum(s):
+        try:
+            return float(s)
+        except (TypeError, ValueError):
+            return float("nan")
+
     with open(path) as f:
         for row in csv.DictReader(f):
             try:
-                m[int(row["hip"])] = row["sptype"].strip()
+                hip = int(row["hip"])
             except (ValueError, KeyError):
                 continue
+            m[hip] = dict(
+                sptype=row.get("sptype", "").strip(),
+                plx=fnum(row.get("plx", "")),
+                e_plx=fnum(row.get("e_plx", "")),
+                varflag=row.get("varflag", "").strip(),
+                multflag=row.get("multflag", "").strip(),
+            )
     return m
 
 
@@ -78,9 +93,13 @@ def main():
 
         hip = int(rec["HIP"])
         bv = float(rec["BV"]) if np.isfinite(rec["BV"]) else None
-        sptype = sptype_map.get(hip, "")
+        meta = sptype_map.get(hip, {})
+        sptype = meta.get("sptype", "")
 
-        fn, matched_sp, flag = spec.resolve_spectrum(lib, sptype, bv)
+        fn, matched_sp, flag = spec.resolve_spectrum(
+            lib, sptype, bv, vmag=vmag,
+            plx_mas=meta.get("plx", float("nan")),
+            e_plx_mas=meta.get("e_plx", float("nan")))
         lam, flux = lib.spectrum(fn)
         mi = phot.m_inst(lam, flux, vmag)
         if mi is None:
@@ -115,6 +134,7 @@ def main():
             vmag=vmag, bv=(bv if bv is not None else ""), sptype=sptype,
             pickles_file=fn, matched_sptype=matched_sp,
             m_inst=mi, delta_v=mi - vmag, e_per_s=e_per_s,
+            varflag=meta.get("varflag", ""), multflag=meta.get("multflag", ""),
             ra_rad=ra_rad, dec_rad=dec_rad,
             pmra_rad=pmra_rad, pmdec_rad=pmdec_rad, flags=flag,
         ))
@@ -126,7 +146,7 @@ def main():
     master = os.path.join(OUT, "master_catalog.csv")
     cols = ["hip", "ra_deg", "dec_deg", "pmra_mas", "pmdec_mas", "vmag", "bv",
             "sptype", "pickles_file", "matched_sptype", "m_inst", "delta_v",
-            "e_per_s", "flags"]
+            "e_per_s", "varflag", "multflag", "flags"]
     with open(master, "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=cols, extrasaction="ignore")
         w.writeheader()

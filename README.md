@@ -28,10 +28,10 @@ spektral tipine göre seçilir.
 
 | | |
 |---|---|
-| Yıldız sayısı | 20521 (m_inst ≤ 7.0) |
+| Yıldız sayısı | 19807 (m_inst ≤ 7.0) |
 | S0 (m_inst=0 → e⁻/s) | 3.65×10⁶ |
-| Ortalama renk terimi (m_inst − V) | −0.346 kadir |
-| corr(B−V, m_inst−V) | −0.758 |
+| Ortalama renk terimi (m_inst − V) | −0.296 kadir |
+| corr(B−V, m_inst−V) | −0.742 |
 
 | Yıldız | Tip | V | m_inst | Δ |
 |---|---|---|---|---|
@@ -70,7 +70,10 @@ Onboard dosya, YI_SIL'in mevcut katalog formatıyla **birebir uyumludur** (drop-
 | `spectra.py` | Pickles kütüphanesi, SpType ayrıştırma/eşleme, fallback zinciri |
 | `photometry.py` | Foton-sayım integrali, Vega sıfır noktası, m_inst, S0 |
 | `build_catalog.py` | Orkestrasyon → 2 katalog + rapor |
-| `validate.py` | Doğrulama testleri (7/7 geçiyor) |
+| `validate.py` | İç tutarlılık testleri (7/7 geçiyor) |
+| `validate_johnson13.py` | Bağımsız doğruluk — ölçülen 13-renk fotometrisine karşı |
+| `cv_compare.py` | Çapraz doğrulanmış B−V karşılaştırması |
+| `digitize_qe.py` | QE eğrisini datasheet PDF vektöründen çıkarır |
 
 ## Optik konvansiyon
 
@@ -81,6 +84,35 @@ Gerçek Zemax tasarımı bundan farklıdır (PSF LUT başlığı: f = 45.237 mm;
 A = 5.661 cm²). Uçuş değerleri istenirse `S0` **0.947** ile çarpılır. Karar: sim ile
 tutarlılık esas alındı — kadirler (`m_inst`) bu seçimden **etkilenmez**, yalnızca mutlak
 ölçek (`S0`) etkilenir.
+
+
+## Bağımsız doğrulama (Johnson & Mitchell 13-renk fotometrisi)
+
+`validate_johnson13.py`, VizieR **II/84** (Johnson+ 1975, 1380 parlak yıldız) veri setini
+kullanır: her yıldızın **ölçülen** 13-renk fotometrisinden (337–1104 nm) gerçek SED'i
+yeniden kurar, sistem tepkisiyle konvolüe eder ve "gerçek" ΔM üretir. Bu, Lu & Wu (2019)
+makalesinin doğrulama yöntemidir.
+
+| Örneklem | Bizim (sentetik) | B−V lineer | B−V 4. derece |
+|---|---|---|---|
+| Tüm eşleşenler (1192) | **0.125** | 0.219 | 0.200 |
+| Temiz (530; değişken+çift elendi) | 0.045 | 0.038 | **0.021** |
+
+*(std, kadir. B−V için 5-kat çapraz doğrulama — `cv_compare.py`)*
+
+**Yorum (dürüstlük notu):**
+
+- **Tüm örneklemde** sentetik yöntem net üstün (~1.7×). B−V, düzensiz yıldızlarda
+  (Mira değişkenleri, çiftler, S-tipi) çöker — makalenin ana iddiası doğrulandı.
+- **Temiz örneklemde** B−V polinomu bizi geçer (0.021 vs 0.045). "Uslu" yıldızlarda B−V
+  mükemmel bir göstergedir; bizim artık hatamız **Pickles tip kuantalanmasından** gelir
+  (131 tip sonlu; K3.5III yıldıza en yakın K3III verilir).
+- **Ama** B−V polinomu kalibrasyon verisi gerektirir — o veriyi üretmenin yolu zaten
+  sentetik fotometridir. Yeni bir optik/dedektör için B−V katsayıları **yoktur**;
+  sentetik yöntem sıfırdan çalışır (makalenin asıl argümanı).
+
+**İndirilemez hata kaynakları:** Mira değişkenleri (13-renk tek epok, Hipparcos V ortalama),
+S/C-tipi yıldızlar (Pickles'ta yok), tip kuantalanması.
 
 ## Kapsam sınırı (uçuş)
 
