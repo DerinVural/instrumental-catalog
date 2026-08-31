@@ -72,6 +72,16 @@ Onboard dosya, YI_SIL'in mevcut katalog formatıyla **birebir uyumludur** (drop-
 | `build_catalog.py` | Orkestrasyon → 2 katalog + rapor |
 | `validate.py` | Doğrulama testleri (7/7 geçiyor) |
 
+## Optik konvansiyon
+
+Radyometri (`S0`, açıklık alanı) **YI_SIL `star_tracker_params.h`** değerlerinden türetilir:
+FOV 14.7° → f = 43.662 mm, f/1.585, A = 5.960 cm².
+
+Gerçek Zemax tasarımı bundan farklıdır (PSF LUT başlığı: f = 45.237 mm; f/1.685 →
+A = 5.661 cm²). Uçuş değerleri istenirse `S0` **0.947** ile çarpılır. Karar: sim ile
+tutarlılık esas alındı — kadirler (`m_inst`) bu seçimden **etkilenmez**, yalnızca mutlak
+ölçek (`S0`) etkilenir.
+
 ## Kapsam sınırı (uçuş)
 
 Katalog **on-axis** ve **referans sıcaklıkta** geçerlidir. Alan-bağımlı vignetting ve

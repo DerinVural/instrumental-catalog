@@ -158,6 +158,12 @@ def main():
         f.write("| Odak uzakligi | %.3f mm |\n" % (f_length * 1e3))
         f.write("| **S0 (m_inst=0 -> e-/s)** | **%.6g** |\n" % s0)
         f.write("| Vega vekili | %s (%s) |\n\n" % (vsp, vfn))
+        f.write("> **Optik konvansiyon:** Radyometri, YI_SIL `star_tracker_params.h`\n"
+                "> degerlerinden turetilir (FOV 14.7 deg -> f=43.662 mm, f/1.585,\n"
+                "> A=5.960 cm^2). Gercek Zemax tasarimi farklidir (f=45.237 mm LUT\n"
+                "> basligindan, f/1.685) -> aciklik alani 5.661 cm^2. Ucus degerleri\n"
+                "> istenirse S0'i **0.947** ile carpin (=%.6g e-/s).\n"
+                "> Karar: sim ile tutarlilik esas alindi.\n\n" % (s0 * 0.947))
         f.write("## Yildiz sayilari\n\n")
         f.write("- m_inst <= %.1f: **%d yildiz**\n" % (MAG_LIMIT, len(rows)))
         f.write("- V gecersiz (atlandi): %d\n" % stats["skipped_v"])

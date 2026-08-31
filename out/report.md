@@ -10,6 +10,12 @@
 | **S0 (m_inst=0 -> e-/s)** | **3.55406e+06** |
 | Vega vekili | A0V (pickles_9) |
 
+> **Optik konvansiyon:** Radyometri, YI_SIL `star_tracker_params.h` degerlerinden
+> turetilir (FOV 14.7 deg -> f=43.662 mm, f/1.585, A=5.960 cm^2). Gercek Zemax
+> tasarimi farklidir (f=45.237 mm LUT basligindan, f/1.685) -> A=5.661 cm^2.
+> Ucus degerleri istenirse S0'i **0.947** ile carpin (= 3.36584e+06 e-/s).
+> Karar: sim ile tutarlilik esas alindi.
+
 ## Yildiz sayilari
 
 - m_inst <= 7.0: **19699 yildiz**
