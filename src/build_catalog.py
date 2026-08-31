@@ -22,8 +22,25 @@ HIP_FITS = r"C:\Users\derin\star-sim-tu\data\catalogs\hipparcos.fits"
 MAG_LIMIT = 7.0                 # m_inst ust siniri (master + onboard)
 MAS_TO_RAD = 4.84813681e-9      # milli-arcsec -> radyan
 DEC_CLIP_DEG = 89.5             # cos(dec) bolmesi icin guvenlik siniri
-HIP_EPOCH = 1991.25             # Hipparcos katalog epogu
 TARGET_EPOCH = 2000.0           # cikti epogu (J2000, mevcut hygdata konvansiyonu)
+
+# Kaynak epogu VARSAYILMAZ; FITS basligindan okunur (B3).
+# Onceki surum J1991.25 varsayip 8.75 yil PM ekliyordu; dosya ZATEN J2000 idi
+# -> yuksek oz-hareketli yildizlarda 60+ arcsec sahte kayma olusuyordu.
+_EPOCH_MAP = {
+    "J2000": 2000.0, "J2000.0": 2000.0, "2000": 2000.0, "2000.0": 2000.0,
+    "J1991.25": 1991.25, "1991.25": 1991.25,
+}
+
+
+def read_source_epoch(header):
+    """FITS basligindan katalog epogunu belirler. Belirsizse KOSUYU DURDURUR."""
+    raw = str(header.get("EPOCH", header.get("EQUINOX", ""))).strip().upper()
+    if raw in _EPOCH_MAP:
+        return _EPOCH_MAP[raw], raw
+    raise SystemExit(
+        "Katalog epogu belirlenemedi (EPOCH='%s'). Varsayim YAPILMAYACAK — "
+        "dogru epogu _EPOCH_MAP'e ekleyin." % raw)
 
 
 def load_sptype_map():
@@ -75,13 +92,17 @@ def main():
     print("[3] S0 (m_inst=0 -> e-/s) = %.4g" % s0)
 
     # ── 3. Katalog verisi ──
-    hip_tab = fits.open(HIP_FITS)[1].data
+    _hdu = fits.open(HIP_FITS)[1]
+    hip_tab = _hdu.data
+    src_epoch, epoch_raw = read_source_epoch(_hdu.header)
+    dt_epoch = TARGET_EPOCH - src_epoch
+    print("[3b] katalog epogu: %s (=%.2f) -> hedef J%.0f | PM tasima: %+.2f yil"
+          % (epoch_raw, src_epoch, TARGET_EPOCH, dt_epoch))
     sptype_map = load_sptype_map()
     print("[4] hipparcos.fits: %d yildiz | SpType kaydi: %d" % (len(hip_tab), len(sptype_map)))
 
     rows = []
     stats = {"flags": {}, "skipped_v": 0, "skipped_calc": 0, "dec_clip": 0}
-    dt_epoch = TARGET_EPOCH - HIP_EPOCH
 
     for rec in hip_tab:
         vmag = float(rec["VMAG"])
@@ -122,7 +143,7 @@ def main():
         pmra_rad = (pmra_mas / cosd) * MAS_TO_RAD       # rad/yr, cos(dec)'siz
         pmdec_rad = pmdec_mas * MAS_TO_RAD
 
-        # Hipparcos epogu (J1991.25) -> J2000
+        # kaynak epok -> J2000 (dt_epoch basliktan turetildi; 0 ise tasima yok)
         ra_rad = np.radians(ra_deg) + dt_epoch * pmra_rad
         dec_rad = np.radians(dec_deg) + dt_epoch * pmdec_rad
 
@@ -158,7 +179,8 @@ def main():
     with open(onboard, "w", newline="") as f:
         f.write("MAG\tRARAD\tDECRAD\tPMRARAD\tPMDECRAD\n")
         for r in rows:
-            f.write("%.4f\t%.9g\t%.9g\t%.6g\t%.6g\n"
+            # .12g: RA/Dec radyanda ~0.001 mas cozunurluk (.9g 0.25 mas biraktiriyordu)
+            f.write("%.4f\t%.12g\t%.12g\t%.9g\t%.9g\n"
                     % (r["m_inst"], r["ra_rad"], r["dec_rad"],
                        r["pmra_rad"], r["pmdec_rad"]))
 
