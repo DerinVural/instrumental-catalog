@@ -1,0 +1,32 @@
+# AR-KAPLAMALI optik gecirgenlik — TURETILMIS (olculmus degil)
+#
+# KAYNAK: t_optics_zemax.csv'nin dayandigi ZEMAX kosusu KAPLAMASIZ modellenmis
+#   (yuzey basi 0.9385-0.9566 = ciplak cam Fresnel kaybi ~4-6%).
+#   Gercek donanimda TUM YUZEYLER AR KAPLAMALI (Derin teyidi, 2026-08-31;
+#   TU-XYZ/star-tracker-catalog A-22 "tasarimci teyidi" ile ayni yonde).
+#
+# TURETME (Chief Ray Transmission Surface By Surface bolumunden):
+#   Her dalgaboyunda saf-arayuz yuzeylerinin medyani f0 alinir (o camin Fresnel'i).
+#   rel < 0.999 olan her yuzey  ->  rel * (0.995 / f0)
+#   Boylece Fresnel kaybi AR seviyesine (0.995/yuzey) cekilir, IC SOGURMA KORUNUR.
+#   rel = 1.000 yuzeyler (dummy/goruntu) dokunulmaz.
+#
+# OLCULEN ETKI (kaplamasiz -> AR):
+#   S0     : 3.554e6 -> 6.830e6 e-/s   (1.92x = 0.71 kadir)
+#   m_inst : maks 0.042 kadir (M7III); tipik < 0.03  -> katalog kadirleri
+#            bu secimden neredeyse ETKILENMEZ (oran yonteminde sadelesir)
+#
+# CAPRAZ KONTROL: AR'li S0=6.83e6, YI_SIL'in kaba formulunun verdigi 6.33e6 ile
+#   1.08x uyumlu (o formul tau=0.80 varsayiyordu -> kaplamali sistemle tutarli).
+#   Kaplamasiz degerle oran 0.56x idi.
+#
+# NOT: Bu bir MODEL duzeltmesidir. Kesin sonuc icin kaplamalari tanimlanmis bir
+#   ZEMAX kosusu alinip bu dosya onunla degistirilmelidir.
+lambda_nm,T_optics
+400.0,0.171396
+480.0,0.578837
+550.0,0.626891
+633.0,0.643040
+720.0,0.650208
+800.0,0.653924
+900.0,0.657418

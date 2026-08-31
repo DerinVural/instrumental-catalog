@@ -7,19 +7,19 @@
 | Aciklik capi | 27.547 mm |
 | Aciklik alani | 5.9600 cm^2 |
 | Odak uzakligi | 43.662 mm |
-| **S0 (m_inst=0 -> e-/s)** | **3.55406e+06** |
+| **S0 (m_inst=0 -> e-/s)** | **6.8298e+06** |
 | Vega vekili | A0V (pickles_9) |
 
 > **Optik konvansiyon:** Radyometri, YI_SIL `star_tracker_params.h`
 > degerlerinden turetilir (FOV 14.7 deg -> f=43.662 mm, f/1.585,
 > A=5.960 cm^2). Gercek Zemax tasarimi farklidir (f=45.237 mm LUT
 > basligindan, f/1.685) -> aciklik alani 5.661 cm^2. Ucus degerleri
-> istenirse S0'i **0.947** ile carpin (=3.36569e+06 e-/s).
+> istenirse S0'i **0.947** ile carpin (=6.46782e+06 e-/s).
 > Karar: sim ile tutarlilik esas alindi.
 
 ## Yildiz sayilari
 
-- m_inst <= 7.0: **19203 yildiz**
+- m_inst <= 7.0: **18993 yildiz**
 - V gecersiz (atlandi): 0
 - hesap basarisiz (atlandi): 0
 - |dec| > 89.5 (pmRA clip): 1
@@ -28,16 +28,16 @@
 
 | flag | adet |
 |---|---|
-| sptype | 15590 |
-| sptype_lum_plx | 3491 |
+| sptype | 15435 |
+| sptype_lum_plx | 3436 |
 | bv | 121 |
 | sptype+decclip | 1 |
 
 ## Renk terimi (m_inst - V)
 
-- ortalama: -0.262 kadir
-- min / max: -3.832 / 0.030
-- **B-V ile korelasyon: -0.710** (negatif beklenir: kirmizi yildiz daha parlak)
+- ortalama: -0.249 kadir
+- min / max: -3.787 / 0.026
+- **B-V ile korelasyon: -0.702** (negatif beklenir: kirmizi yildiz daha parlak)
 
 ## Cikti dosyalari
 

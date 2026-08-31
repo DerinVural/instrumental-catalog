@@ -21,3 +21,11 @@ COLOR_MARGIN = 4.5
 
 # On-eleme esigi: bu degerden sonuk yildizlar hic hesaplanmaz.
 VMAG_PREFILTER = MAG_LIMIT + COLOR_MARGIN      # 11.5
+
+# [B2] Optik gecirgenlik kaynagi.
+#   False -> data/t_optics_zemax.csv        (ham ZEMAX; KAPLAMASIZ modellenmis)
+#   True  -> data/t_optics_ar_corrected.csv (AR kaplama duzeltmesi uygulanmis)
+# Gercek donanimda tum yuzeyler AR kaplamali (teyit: 2026-08-31) -> True.
+USE_AR_CORRECTED = True
+T_OPTICS_FILE = ("t_optics_ar_corrected.csv" if USE_AR_CORRECTED
+                 else "t_optics_zemax.csv")

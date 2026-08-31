@@ -138,7 +138,9 @@ from photometry import Photometry as _P
 s0_noT = _P(grid, r_inst_noT, r_v, vlam, vflux, area).s0_electrons_per_s()
 print("  [bilgi] S0 (T_optics=1) = %.4g -> T_optics zincire %.2fx (%.2f kadir) maliyet"
       % (s0_noT, s0_noT / s0_new, 2.5 * np.log10(s0_noT / s0_new)))
-print("  [bilgi] AR kaplamali senaryo (olculen 1.50x): S0 = %.4g" % (s0_new * 1.50))
+from config import USE_AR_CORRECTED, T_OPTICS_FILE
+print("  [bilgi] T_optics kaynagi: %s (AR duzeltmesi %s)"
+      % (T_OPTICS_FILE, "ACIK" if USE_AR_CORRECTED else "KAPALI"))
 
 # ── Test 5: dagilim saglik ──
 # Ust sinir: hicbir yildiz V'den belirgin SONUK olmamali (silisyum NIR'de genis bant).

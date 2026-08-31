@@ -55,7 +55,8 @@ def _interp_clamped(lam_src, val_src, grid):
 def system_response(grid=GRID_NM):
     """R_inst(lambda) = QE x T_optics  (dolgu faktoru QE egrisinde ZATEN dahil)."""
     lam_q, qe = _load_csv("qe_cmv4000_e5.csv")
-    lam_t, t_opt = _load_csv("t_optics_zemax.csv")
+    from config import T_OPTICS_FILE
+    lam_t, t_opt = _load_csv(T_OPTICS_FILE)
     qe_i = _interp_clamped(lam_q, qe, grid)
     t_i = _interp_clamped(lam_t, t_opt, grid)
     # QE olculen aralik disinda (400 nm alti) hizla duser -> 400 nm altini sifirla
