@@ -24,23 +24,67 @@ MAS_TO_RAD = 4.84813681e-9      # milli-arcsec -> radyan
 DEC_CLIP_DEG = 89.5             # cos(dec) bolmesi icin guvenlik siniri
 TARGET_EPOCH = 2000.0           # cikti epogu (J2000, mevcut hygdata konvansiyonu)
 
-# Kaynak epogu VARSAYILMAZ; FITS basligindan okunur (B3).
-# Onceki surum J1991.25 varsayip 8.75 yil PM ekliyordu; dosya ZATEN J2000 idi
-# -> yuksek oz-hareketli yildizlarda 60+ arcsec sahte kayma olusuyordu.
-_EPOCH_MAP = {
-    "J2000": 2000.0, "J2000.0": 2000.0, "2000": 2000.0, "2000.0": 2000.0,
-    "J1991.25": 1991.25, "1991.25": 1991.25,
+# [B3] Kaynak epogu BASLIKTAN OKUNMAZ, VERIDEN OLCULUR.
+#
+# UYARI (kendi hatamiz, 2026-08-31): FITS basligi EPOCH='J2000' diyor, ama bu
+# EKINOKS'u (ICRS/J2000 koordinat cercevesi) belirtiyor; konumlarin EPOGUNU
+# degil. Hipparcos konumlari J1991.25 epogundadir. Basliga guvenip PM
+# tasimasini kaldirmak, yuksek oz-hareketli yildizlarda 60-90 arcsec hataya
+# yol acar (Barnard 90.6", Groombridge 1830 61.8").
+#
+# Bu yuzden epok, BILINEN J2000 konumlariyla kiyaslanarak belirlenir.
+# Referanslar: SIMBAD ICRS J2000 (epok 2000.0), yuksek oz-hareketli yildizlar.
+EPOCH_REF_J2000 = {
+    # HIP: (ad, RA_deg, Dec_deg)
+    87937: ("Barnard", 269.4520769, 4.693391),
+    57939: ("Groombridge 1830", 178.2448713, 37.7186775),
+    24186: ("Kapteyn", 77.919083, -45.018417),
+    54035: ("Lalande 21185", 165.834125, 35.969889),
 }
+EPOCH_CANDIDATES = (1991.25, 2000.0)      # denenecek kaynak epoklari
+EPOCH_TOL_ARCSEC = 0.5                    # kabul esigi
 
 
-def read_source_epoch(header):
-    """FITS basligindan katalog epogunu belirler. Belirsizse KOSUYU DURDURUR."""
-    raw = str(header.get("EPOCH", header.get("EQUINOX", ""))).strip().upper()
-    if raw in _EPOCH_MAP:
-        return _EPOCH_MAP[raw], raw
-    raise SystemExit(
-        "Katalog epogu belirlenemedi (EPOCH='%s'). Varsayim YAPILMAYACAK — "
-        "dogru epogu _EPOCH_MAP'e ekleyin." % raw)
+def measure_source_epoch(tab, target_epoch=2000.0):
+    """Kaynak epogunu VERIDEN olcer: her aday epok icin referans yildizlari
+    hedef epoga tasiyip bilinen J2000 konumlariyla kiyaslar; en kucuk artigi
+    veren adayi secer. Hicbiri esigi saglamazsa KOSUYU DURDURUR."""
+    hips = np.asarray(tab["HIP"])
+    best = None
+    detail = []
+    for cand in EPOCH_CANDIDATES:
+        dt = target_epoch - cand
+        errs = []
+        for hip, (nm, ra0, de0) in EPOCH_REF_J2000.items():
+            idx = np.where(hips == hip)[0]
+            if not len(idx):
+                continue
+            i = idx[0]
+            ra, de = float(tab["RA"][i]), float(tab["DEC"][i])
+            pra, pde = float(tab["PMRA"][i]), float(tab["PMDEC"][i])
+            cosd = np.cos(np.radians(de))
+            ra_t = ra + dt * (pra / 1000.0 / 3600.0) / max(cosd, 1e-6)
+            de_t = de + dt * (pde / 1000.0 / 3600.0)
+            errs.append(np.hypot((ra_t - ra0) * np.cos(np.radians(de0)),
+                                 de_t - de0) * 3600.0)
+        if not errs:
+            continue
+        med = float(np.median(errs))
+        detail.append((cand, med, len(errs)))
+        if best is None or med < best[1]:
+            best = (cand, med, len(errs))
+
+    if best is None:
+        raise SystemExit("[B3] Epok olculemedi: referans yildizlarin hicbiri bulunamadi.")
+    for cand, med, n in detail:
+        print("     epok adayi J%.2f -> medyan artik %8.3f arcsec (%d yildiz)"
+              % (cand, med, n))
+    if best[1] > EPOCH_TOL_ARCSEC:
+        raise SystemExit(
+            "[B3] Epok belirlenemedi: en iyi aday J%.2f bile %.2f arcsec artik "
+            "birakiyor (esik %.2f). Konumlar/PM beklenenden farkli — VARSAYIM "
+            "YAPILMAYACAK." % (best[0], best[1], EPOCH_TOL_ARCSEC))
+    return best[0], best[1]
 
 
 def load_sptype_map():
@@ -94,10 +138,12 @@ def main():
     # ── 3. Katalog verisi ──
     _hdu = fits.open(HIP_FITS)[1]
     hip_tab = _hdu.data
-    src_epoch, epoch_raw = read_source_epoch(_hdu.header)
+    print("[3b] epok VERIDEN olculuyor (baslik EPOCH='%s' — EKINOKS, epok DEGIL):"
+          % str(_hdu.header.get("EPOCH", "?")).strip())
+    src_epoch, resid = measure_source_epoch(hip_tab, TARGET_EPOCH)
     dt_epoch = TARGET_EPOCH - src_epoch
-    print("[3b] katalog epogu: %s (=%.2f) -> hedef J%.0f | PM tasima: %+.2f yil"
-          % (epoch_raw, src_epoch, TARGET_EPOCH, dt_epoch))
+    print("     SECILEN: J%.2f (artik %.3f arcsec) -> PM tasima %+.2f yil"
+          % (src_epoch, resid, dt_epoch))
     sptype_map = load_sptype_map()
     print("[4] hipparcos.fits: %d yildiz | SpType kaydi: %d" % (len(hip_tab), len(sptype_map)))
 
