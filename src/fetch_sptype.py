@@ -1,7 +1,11 @@
 """VizieR I/239/hip_main -> HIP basina SpType ceker, data/hip_sptype.csv yazar.
 
-Yalnizca Vmag <= VMAG_CUT olan yildizlar (m_inst, V'den en fazla ~1 kadir parlak
-olabilir; m_inst<=7.0 hedefi icin V<=8.0 guvenli pay birakir).
+Yalnizca Vmag <= VMAG_CUT olan yildizlar.
+
+[B1/N2] VMAG_CUT artik config.VMAG_PREFILTER'dan gelir (= MAG_LIMIT+COLOR_MARGIN).
+Onceki docstring "m_inst V'den en fazla ~1 kadir parlak olabilir" diyordu; bu
+YANLISTI — olculen en negatif renk terimi -3.83 (gec-M devleri). Esik build
+ile AYNI kaynaktan turetilir ki SpType kapsamasi katalogdan dar kalmasin.
 """
 import os
 import csv
@@ -12,7 +16,7 @@ warnings.filterwarnings("ignore")
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(HERE, "data")
 OUT = os.path.join(DATA, "hip_sptype.csv")
-VMAG_CUT = 8.0
+from config import VMAG_PREFILTER as VMAG_CUT   # [N2] tek kaynak
 
 
 def main():

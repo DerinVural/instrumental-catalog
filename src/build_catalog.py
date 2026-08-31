@@ -19,7 +19,7 @@ DATA = os.path.join(HERE, "data")
 OUT = os.path.join(HERE, "out")
 HIP_FITS = r"C:\Users\derin\star-sim-tu\data\catalogs\hipparcos.fits"
 
-MAG_LIMIT = 7.0                 # m_inst ust siniri (master + onboard)
+from config import MAG_LIMIT, COLOR_MARGIN, VMAG_PREFILTER
 MAS_TO_RAD = 4.84813681e-9      # milli-arcsec -> radyan
 DEC_CLIP_DEG = 89.5             # cos(dec) bolmesi icin guvenlik siniri
 TARGET_EPOCH = 2000.0           # cikti epogu (J2000, mevcut hygdata konvansiyonu)
@@ -109,7 +109,7 @@ def main():
         if not np.isfinite(vmag):
             stats["skipped_v"] += 1
             continue
-        if vmag > 8.5:                     # m_inst<=7.0 icin guvenli on-eleme
+        if vmag > VMAG_PREFILTER:          # [B1] turetilmis esik (config.py)
             continue
 
         hip = int(rec["HIP"])
@@ -162,6 +162,18 @@ def main():
 
     rows.sort(key=lambda r: r["m_inst"])
     print("[5] hesaplandi: %d yildiz (m_inst <= %.1f)" % (len(rows), MAG_LIMIT))
+
+    # [B1] EKSIKLIK GUARD'i: renk terimi payi yetmediyse katalog EKSIKTIR.
+    observed_min = min(r["delta_v"] for r in rows)
+    if observed_min < -COLOR_MARGIN:
+        raise RuntimeError(
+            "COLOR_MARGIN=%.2f YETERSIZ: olculen min delta_v=%.3f. "
+            "V<=%.2f on-elemesi, m_inst<=%.1f kosulunu saglayan bazi kirmizi "
+            "yildizlari disarida birakmis olabilir -> KATALOG EKSIK. "
+            "config.py'de COLOR_MARGIN'i buyutup yeniden calistir."
+            % (COLOR_MARGIN, observed_min, VMAG_PREFILTER, MAG_LIMIT))
+    print("[5b] renk payi: |min delta_v|=%.3f / COLOR_MARGIN=%.2f -> kalan pay %.3f kadir"
+          % (abs(observed_min), COLOR_MARGIN, COLOR_MARGIN - abs(observed_min)))
 
     # ── 4. master ──
     master = os.path.join(OUT, "master_catalog.csv")

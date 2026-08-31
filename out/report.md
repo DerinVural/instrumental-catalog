@@ -19,7 +19,7 @@
 
 ## Yildiz sayilari
 
-- m_inst <= 7.0: **19807 yildiz**
+- m_inst <= 7.0: **19203 yildiz**
 - V gecersiz (atlandi): 0
 - hesap basarisiz (atlandi): 0
 - |dec| > 89.5 (pmRA clip): 1
@@ -28,16 +28,16 @@
 
 | flag | adet |
 |---|---|
-| sptype | 15368 |
-| sptype_lum_plx | 3488 |
-| bv | 950 |
+| sptype | 15590 |
+| sptype_lum_plx | 3491 |
+| bv | 121 |
 | sptype+decclip | 1 |
 
 ## Renk terimi (m_inst - V)
 
-- ortalama: -0.296 kadir
+- ortalama: -0.262 kadir
 - min / max: -3.832 / 0.030
-- **B-V ile korelasyon: -0.742** (negatif beklenir: kirmizi yildiz daha parlak)
+- **B-V ile korelasyon: -0.710** (negatif beklenir: kirmizi yildiz daha parlak)
 
 ## Cikti dosyalari
 
