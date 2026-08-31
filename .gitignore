@@ -1,0 +1,7 @@
+# indirilen/uretilen buyuk veriler (yeniden uretilebilir)
+data/pickles/
+data/hip_sptype.csv
+out/master_catalog.csv
+out/hip_instrumental.txt
+__pycache__/
+*.pyc
