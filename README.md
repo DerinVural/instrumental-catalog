@@ -1,0 +1,92 @@
+# instrumental-catalog
+
+Star tracker için **instrümental kadir** (instrumental magnitude) yıldız kataloğu üreteci.
+
+Hipparcos kataloğundaki standart **V kadiri** yerine, bu star tracker'ın **kendi optik +
+dedektör zincirinin gerçekte gördüğü parlaklığı** hesaplar.
+
+> **Neden:** V kadiri Johnson V bandında tanımlıdır. Silisyum dedektör (CMV4000) yakın
+> kızılötesine duyarlıdır ve optik geçirgenlik dalgaboyuna göre değişir. Sonuç: kırmızı
+> yıldızlar V'nin öngördüğünden **daha fazla** elektron üretir. V kadiri kullanıldığı
+> sürece öngörülen sinyal (SNR, pozlama, tespit eşiği) sistematik olarak yanlıştır.
+
+## Yöntem
+
+```
+R_inst(λ) = QE(λ) × T_optics(λ)          CMV4000 Mono E5 × ZEMAX (on-axis)
+
+                    ⎡ (∫F·R_inst·λdλ / ∫F·R_V·λdλ)_yıldız ⎤
+m_inst = V − 2.5·log⎢ ─────────────────────────────────── ⎥
+                    ⎣ (∫F·R_inst·λdλ / ∫F·R_V·λdλ)_Vega   ⎦
+```
+
+Oran yöntemi olduğu için **mutlak akı kalibrasyonu gerekmez**; Vega (A0V) tanım gereği
+`m_inst = V` verir. Yıldız spektrumları **Pickles UVILIB** kütüphanesinden, her yıldızın
+spektral tipine göre seçilir.
+
+## Sonuçlar
+
+| | |
+|---|---|
+| Yıldız sayısı | 20521 (m_inst ≤ 7.0) |
+| S0 (m_inst=0 → e⁻/s) | 3.65×10⁶ |
+| Ortalama renk terimi (m_inst − V) | −0.346 kadir |
+| corr(B−V, m_inst−V) | −0.758 |
+
+| Yıldız | Tip | V | m_inst | Δ |
+|---|---|---|---|---|
+| Vega | A0V | 0.03 | 0.030 | 0.000 (referans) |
+| Rigel | B8Ia | 0.18 | 0.179 | −0.001 |
+| Arcturus | K2III | −0.05 | −0.444 | −0.394 |
+| Betelgeuse | M2Ib | 0.45 | −0.588 | −1.038 |
+
+## Kullanım
+
+```bash
+python src/prepare_data.py     # ZEMAX/QE/Johnson V tablolarını hazırla
+python src/fetch_sptype.py     # VizieR'den SpType çek
+python src/build_catalog.py    # katalogları üret
+python src/validate.py         # doğrulama testleri
+```
+
+Pickles kütüphanesi ilk çalıştırmada `data/pickles/` altına indirilir
+(<https://ssb.stsci.edu/cdbs/grid/pickles/dat_uvi/>).
+
+## Çıktılar (`out/`)
+
+| Dosya | İçerik |
+|---|---|
+| `hip_instrumental.txt` | Onboard katalog — 5 kolon (`MAG RARAD DECRAD PMRARAD PMDECRAD`), **MAG = m_inst** |
+| `master_catalog.csv` | İzlenebilirlik — HIP, V, B−V, SpType, kullanılan Pickles spektrumu, m_inst, Δ, e⁻/s, flag |
+| `report.md` | S0, sayımlar, flag dağılımı, istatistikler |
+
+Onboard dosya, YI_SIL'in mevcut katalog formatıyla **birebir uyumludur** (drop-in).
+
+## Modüller
+
+| Modül | Sorumluluk |
+|---|---|
+| `response.py` | QE + T_optics → R_inst(λ); Johnson V → R_V(λ); açıklık alanı |
+| `spectra.py` | Pickles kütüphanesi, SpType ayrıştırma/eşleme, fallback zinciri |
+| `photometry.py` | Foton-sayım integrali, Vega sıfır noktası, m_inst, S0 |
+| `build_catalog.py` | Orkestrasyon → 2 katalog + rapor |
+| `validate.py` | Doğrulama testleri (7/7 geçiyor) |
+
+## Kapsam sınırı (uçuş)
+
+Katalog **on-axis** ve **referans sıcaklıkta** geçerlidir. Alan-bağımlı vignetting ve
+termal kayma katalogda **değil**, render/FSW tarafında uygulanır — bir yıldızın katalog
+kadiri, dedektörde nereye düştüğüne bağlı olamaz.
+
+Tasarım ayrıntısı: `docs/superpowers/specs/2026-08-28-instrumental-magnitude-catalog-design.md`
+
+## Veri kaynakları
+
+| Veri | Kaynak |
+|---|---|
+| Astrometri, V, B−V | Hipparcos (ESA, 1997) |
+| Spektral tip | VizieR `I/239/hip_main` |
+| Yıldız spektrumları | Pickles (1998) UVILIB, STScI |
+| QE(λ) | ams-OSRAM CMV4000 datasheet DS000728 v8-01, Fig. 7 (Mono E5) |
+| T_optics(λ) | ZEMAX optik tasarım analizi (on-axis) |
+| Johnson V bandı | Bessell (1990), PASP 102:1181 |
