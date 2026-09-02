@@ -243,6 +243,24 @@ def main():
                     % (r["m_inst"], r["ra_rad"], r["dec_rad"],
                        r["pmra_rad"], r["pmdec_rad"]))
 
+    # ── 5b. onboard, YENI katalog_tam formati (upstream f9e49c4) ──
+    # "idx,HIP,RA_deg,Dec_deg,x,y,z,Vmag,Hpmag" — v_eci HAZIR birim vektor,
+    # Parse_StarCatalog_KatalogTam bunu okur (PM/trig hesabi YAPMAZ, filtre YOK).
+    # Avantaji: HIP kimligi korunur, konumlar bizim J2000 tasimamizla gomulur,
+    # YI_CATALOG_FILE ile hicbir dosya ezilmeden secilir.
+    #   Vmag kolonuna m_inst yazilir (sim bu kolonu magnitude olarak okur).
+    #   Hpmag kolonuna V yazilir -> izlenebilirlik (fark = renk terimi).
+    onboard_csv = os.path.join(OUT, "katalog_instrumental.csv")
+    with open(onboard_csv, "w", newline="") as f:
+        f.write("idx,HIP,RA_deg,Dec_deg,x,y,z,Vmag,Hpmag\n")
+        for i, r in enumerate(rows):
+            ra, dec = r["ra_rad"], r["dec_rad"]          # J2000'e tasinmis
+            cd = np.cos(dec)
+            x, y, z = cd * np.cos(ra), cd * np.sin(ra), np.sin(dec)
+            f.write("%d,%d,%.8f,%.8f,%.9f,%.9f,%.9f,%.4f,%.4f\n"
+                    % (i, r["hip"], np.degrees(ra), np.degrees(dec),
+                       x, y, z, r["m_inst"], r["vmag"]))
+
     # ── 6. rapor ──
     dv = np.array([r["delta_v"] for r in rows])
     bvs = np.array([r["bv"] for r in rows if r["bv"] != ""], float)
@@ -289,9 +307,15 @@ def main():
         f.write("- **B-V ile korelasyon: %.3f** (negatif beklenir: kirmizi yildiz daha parlak)\n\n" % corr)
         f.write("## Cikti dosyalari\n\n")
         f.write("- `master_catalog.csv` — izlenebilirlik (tum alanlar)\n")
-        f.write("- `hip_instrumental.txt` — YI_SIL drop-in (MAG kolonu = m_inst)\n")
+        f.write("- `hip_instrumental.txt` — YI_SIL ESKI format (5 kolon, MAG = m_inst)\n")
+        f.write("- `katalog_instrumental.csv` — YENI `katalog_tam` formati "
+                "(upstream f9e49c4). Vmag kolonu = **m_inst**, Hpmag kolonu = V "
+                "(izlenebilirlik; fark = renk terimi). Kullanim:\n"
+                "  `YI_CATALOG_FILE=data/katalog_instrumental.csv ./YI_SIL --algo=pyramid`\n"
+                "  Hicbir dosyayi ezmez; konumlar J2000'e tasinmis birim vektor olarak gomulu.\n")
 
-    print("[6] yazildi:\n    %s\n    %s\n    %s" % (master, onboard, rep))
+    print("[6] yazildi:\n    %s\n    %s\n    %s\n    %s"
+          % (master, onboard, onboard_csv, rep))
     print("    S0=%.6g | renk terimi ort=%.3f | B-V korelasyon=%.3f" % (s0, dv.mean(), corr))
 
 

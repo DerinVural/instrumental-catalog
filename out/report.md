@@ -81,4 +81,7 @@ Zincir: `m_inst -> e-/s -> poz -> e- -> SNR -> centroid -> attitude`. Poz 50 ms,
 ## Cikti dosyalari
 
 - `master_catalog.csv` — izlenebilirlik (tum alanlar)
-- `hip_instrumental.txt` — YI_SIL drop-in (MAG kolonu = m_inst)
+- `hip_instrumental.txt` — YI_SIL ESKI format (5 kolon, MAG = m_inst)
+- `katalog_instrumental.csv` — YENI `katalog_tam` formati (upstream f9e49c4). Vmag kolonu = **m_inst**, Hpmag kolonu = V (izlenebilirlik; fark = renk terimi). Kullanim:
+  `YI_CATALOG_FILE=data/katalog_instrumental.csv ./YI_SIL --algo=pyramid`
+  Hicbir dosyayi ezmez; konumlar J2000'e tasinmis birim vektor olarak gomulu.
